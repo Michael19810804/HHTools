@@ -49,19 +49,34 @@ const extractField = (df: any[], keyword: string, offsetCol: number = 1): string
   try {
     const lowerKeyword = keyword.toLowerCase();
     
+    // 寻找最大列数，而不是依赖第一行
+    let maxCols = 0;
+    // 扫描前20行来估算列数，避免遍历整个大文件
+    for (let i = 0; i < Math.min(df.length, 20); i++) {
+      if (df[i] && df[i].length > maxCols) {
+        maxCols = df[i].length;
+      }
+    }
+    // 如果还没找到，默认给一个较大值 (比如 26 列 A-Z)
+    if (maxCols < 26) maxCols = 26;
+
     // 遍历每一列寻找关键字
-    for (let colIdx = 0; colIdx < df[0].length; colIdx++) {
+    for (let colIdx = 0; colIdx < maxCols; colIdx++) {
       // 在该列中寻找匹配的行
       const rowIdx = df.findIndex((row: any[]) => {
+        if (!row || colIdx >= row.length) return false;
         const cellVal = String(row[colIdx] || '').trim().toLowerCase();
         return cellVal === lowerKeyword;
       });
       
       if (rowIdx !== -1) {
         // 找到关键字，向右偏移 offsetCol 列获取值
-        const targetVal = df[rowIdx][colIdx + offsetCol];
-        if (targetVal === undefined || targetVal === null) return "";
-        return String(targetVal).trim();
+        const targetRow = df[rowIdx];
+        if (targetRow && (colIdx + offsetCol) < targetRow.length) {
+          const targetVal = targetRow[colIdx + offsetCol];
+          if (targetVal === undefined || targetVal === null) return "";
+          return String(targetVal).trim();
+        }
       }
     }
   } catch (e) {
@@ -90,6 +105,16 @@ const formatNumber = (num: number): string => {
 const parseDateStr = (val: any): string => {
   if (!val) return "";
   
+  // 如果是纯数字字符串，先转为数字
+  if (typeof val === 'string' && /^\d+(\.\d+)?$/.test(val.trim())) {
+    const num = parseFloat(val);
+    // Excel 日期通常 > 20000 (1954年) 且 < 100000 (2173年)
+    // 简单的阈值判断，避免把普通数字误判为日期
+    if (num > 20000 && num < 100000) {
+      val = num;
+    }
+  }
+
   // 如果是 Excel 的序列号日期 (比如 44567)
   if (typeof val === 'number') {
     // Excel 的基准日期是 1899-12-30
@@ -103,6 +128,12 @@ const parseDateStr = (val: any): string => {
   // 尝试直接解析
   const d = dayjs(val);
   if (d.isValid()) {
+    // 排除纯数字被误解析为年份的情况 (dayjs("2000") -> 2000-01-01)
+    // 如果原始值是类似 "2023.05.01" 或 "2023-05-01" 则保留
+    if (String(val).includes('.') || String(val).includes('-') || String(val).includes('/')) {
+        return d.format('YYYY.MM.DD');
+    }
+    // 如果是其他格式，如 "May 1, 2023"
     return d.format('YYYY.MM.DD');
   }
   
@@ -143,6 +174,12 @@ const extractFixedTable = (df: any[]): PaymentItem[] => {
     const isC3Empty = !col3 || String(col3).trim() === "";
     
     if (isC0Empty && isC2Empty && isC3Empty) break;
+
+    // 过滤掉包含“审验”、“审验人”、“通过”等关键词的行
+    const rowContent = (String(col0) + String(col1) + String(col2) + String(col3)).toLowerCase();
+    if (rowContent.includes('审验') || rowContent.includes('通过') || rowContent.includes('verifier') || rowContent.includes('approved')) {
+      continue;
+    }
     
     schedule.push({
       item: col0 ? String(col0).replace('.0', '').trim() : "",
@@ -185,6 +222,14 @@ export const parseExcelData = async (file: File): Promise<ContractData> => {
         // 2. 房东信息
         const rawBank = extractField(jsonData, "bankInfo");
         const valBank = rawBank || "KBank: XXX-XXX-XXXX";
+        
+        // Debug: 打印银行信息提取结果
+        console.log('[ExcelParser] Bank Info Extraction:', {
+          keyword: 'bankInfo',
+          extracted: rawBank,
+          final: valBank
+        });
+
         const valOwnerName = extractField(jsonData, "Owner"); // TODO: 拼音转换暂时忽略，直接用原名
         const valOwnerId = extractField(jsonData, "ownerpassportNum") || extractField(jsonData, "OwnerPassportNum");
         

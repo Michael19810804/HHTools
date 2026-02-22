@@ -18,7 +18,7 @@ const Login: React.FC = () => {
       // Internal Hardcoded Logic mapping
       if (username === 'rocket' && password === '9898') {
         const email = 'rocket@hhtools.com';
-        const realPassword = 'rocket_password_9898';
+        const realPassword = 'rocket9898';
 
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -61,7 +61,7 @@ const Login: React.FC = () => {
           >
             <Input 
               prefix={<UserOutlined className="text-gray-400" />} 
-              placeholder="用户名 (rocket)" 
+              placeholder="用户名" 
             />
           </Form.Item>
 
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
           >
             <Input.Password 
               prefix={<LockOutlined className="text-gray-400" />} 
-              placeholder="密码 (9898)" 
+              placeholder="密码" 
             />
           </Form.Item>
 

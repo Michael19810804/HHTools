@@ -32,7 +32,6 @@ import { generateContract } from '../utils/docxGenerator';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
-const { Step } = Steps;
 
 const ContractTool: React.FC = () => {
   const navigate = useNavigate();
@@ -71,9 +70,9 @@ const ContractTool: React.FC = () => {
       await generateContract(contractData);
       message.success('合约已生成并开始下载！');
       setCurrentStep(2); // 完成
-    } catch (error) {
-      console.error(error);
-      message.error('生成合约失败，请检查模板文件是否存在');
+    } catch (error: any) {
+      console.error('Contract Generation Error:', error);
+      message.error(`生成合约失败: ${error.message || '请检查模板文件是否存在'}`);
     } finally {
       setLoading(false);
     }
@@ -109,11 +108,14 @@ const ContractTool: React.FC = () => {
       <Content className="p-8 max-w-7xl mx-auto w-full">
         {/* 步骤条 */}
         <div className="mb-8">
-          <Steps current={currentStep}>
-            <Step title="上传 Excel" description="导入租赁数据" />
-            <Step title="核对数据" description="确认关键信息" />
-            <Step title="生成合约" description="导出 Word 文档" />
-          </Steps>
+          <Steps 
+            current={currentStep}
+            items={[
+              { title: '上传 Excel', description: '导入租赁数据' },
+              { title: '核对数据', description: '确认关键信息' },
+              { title: '生成合约', description: '导出 Word 文档' },
+            ]}
+          />
         </div>
 
         {/* 步骤 1: 上传 */}

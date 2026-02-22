@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SignDashboard from './pages/SignDashboard';
 import ContractTool from './pages/ContractTool';
+import DebugLogin from './pages/DebugLogin';
 import UploadPage from './pages/Upload';
 import Sign from './pages/Sign';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -68,6 +69,8 @@ const App: React.FC = () => {
           <Route path="/upload" element={<Navigate to="/tools/sign/upload" replace />} />
 
           {/* Public Routes */}
+          <Route path="/login/debug" element={<Navigate to="/debug" replace />} />
+          <Route path="/debug" element={<DebugLogin />} />
           <Route path="/sign/:token" element={<Sign />} />
           
           {/* Default redirect */}
