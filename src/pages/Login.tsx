@@ -15,7 +15,7 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      // Internal Hardcoded Logic mapping
+      // Internal Hardcoded Logic mapping (Simplified for internal use)
       if (username === 'rocket' && password === '9898') {
         const email = 'rocket@hhtools.com';
         const realPassword = 'rocket9898';
