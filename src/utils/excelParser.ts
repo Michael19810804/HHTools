@@ -34,6 +34,10 @@ export interface ContractData {
   checkIn: string;
   checkOut: string;
   
+  // 图片数据 (ArrayBuffer)
+  ownerPassportImage?: ArrayBuffer | null;
+  tenantPassportImage?: ArrayBuffer | null;
+  
   schedule: PaymentItem[];
 }
 

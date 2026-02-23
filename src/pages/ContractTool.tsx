@@ -13,7 +13,8 @@ import {
   message, 
   Alert,
   Divider,
-  Steps
+  Steps,
+  Image
 } from 'antd';
 import { 
   InboxOutlined, 
@@ -23,7 +24,9 @@ import {
   BankOutlined, 
   HomeOutlined, 
   DollarOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  UploadOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { parseExcelData, ContractData } from '../utils/excelParser';
@@ -54,6 +57,16 @@ const ContractTool: React.FC = () => {
       setLoading(false);
     }
     return false; // 阻止自动上传
+  };
+
+  // 处理输入变更
+  const handleInputChange = (field: keyof ContractData, value: string) => {
+    if (contractData) {
+      setContractData({
+        ...contractData,
+        [field]: value
+      });
+    }
   };
 
   // 处理生成合约
@@ -163,33 +176,61 @@ const ContractTool: React.FC = () => {
                   <Row gutter={24}>
                     <Col span={12}>
                       <div className="mb-4">
-                        <label className="text-gray-500 text-xs uppercase font-bold">房东姓名</label>
-                        <Input value={contractData.ownerName} readOnly className="mt-1" />
+                        <label className="text-gray-500 text-xs uppercase font-bold text-red-500">房东姓名 *</label>
+                        <Input 
+                          status={!contractData.ownerName ? 'error' : ''} 
+                          value={contractData.ownerName || 'MISSING'} 
+                          onChange={(e) => handleInputChange('ownerName', e.target.value)}
+                          className="mt-1" 
+                        />
                       </div>
                     </Col>
                     <Col span={12}>
                       <div className="mb-4">
                         <label className="text-gray-500 text-xs uppercase font-bold text-red-500">房东证件号 *</label>
-                        <Input status={!contractData.ownerId ? 'error' : ''} value={contractData.ownerId || 'MISSING'} readOnly className="mt-1" />
+                        <Input 
+                          status={!contractData.ownerId ? 'error' : ''} 
+                          value={contractData.ownerId || 'MISSING'} 
+                          onChange={(e) => handleInputChange('ownerId', e.target.value)}
+                          className="mt-1" 
+                        />
                       </div>
                     </Col>
                     <Col span={24}>
                       <div className="mb-4">
                         <label className="text-gray-500 text-xs uppercase font-bold">银行信息</label>
-                        <Input prefix={<BankOutlined />} value={contractData.bankInfo} readOnly className="mt-1" />
+                        <Input 
+                          prefix={<BankOutlined className="text-gray-400" />} 
+                          value={contractData.bankInfo} 
+                          onChange={(e) => handleInputChange('bankInfo', e.target.value)}
+                          className="mt-1" 
+                        />
                       </div>
                     </Col>
-                    <Divider />
+                  </Row>
+                </Card>
+
+                {/* 租客信息 */}
+                <Card title={<><UserOutlined className="mr-2" />租客信息</>} className="mb-6 shadow-sm">
+                  <Row gutter={16}>
                     <Col span={12}>
                       <div className="mb-4">
                         <label className="text-gray-500 text-xs uppercase font-bold">租客姓名</label>
-                        <Input value={contractData.tenantName} readOnly className="mt-1" />
+                        <Input 
+                          value={contractData.tenantName} 
+                          onChange={(e) => handleInputChange('tenantName', e.target.value)}
+                          className="mt-1" 
+                        />
                       </div>
                     </Col>
                     <Col span={12}>
                       <div className="mb-4">
                         <label className="text-gray-500 text-xs uppercase font-bold">租客证件号</label>
-                        <Input value={contractData.tenantId} readOnly className="mt-1" />
+                        <Input 
+                          value={contractData.tenantId} 
+                          onChange={(e) => handleInputChange('tenantId', e.target.value)}
+                          className="mt-1" 
+                        />
                       </div>
                     </Col>
                   </Row>
@@ -268,7 +309,7 @@ const ContractTool: React.FC = () => {
                       block
                       className="h-12 text-lg"
                     >
-                      生成 Word 合约
+                      生成 Word 合约 (New)
                     </Button>
                     
                     {!contractData.ownerId && (

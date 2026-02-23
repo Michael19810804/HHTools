@@ -34,7 +34,6 @@ export const generateContract = async (data: ContractData) => {
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
-      // 强制使用简单的定界符配置，防止复杂的 XML 干扰
       delimiters: { start: '{{', end: '}}' },
     });
     
@@ -58,9 +57,11 @@ export const generateContract = async (data: ContractData) => {
         ac_cleaning_fee: data.acFeeFormatted,
         late_penalty_daily: data.latePenaltyFormatted
       },
-      // 表格数据通常需要特殊的 docxtemplater 语法，这里先简化处理
-      // 假设模板里有 {#schedule} ... {/schedule} 循环
-      schedule: data.schedule
+      // 兼容付款计划表
+      PaymentSchedule: data.schedule,
+      // 图片占位符 (如果用户没删掉标签，显示文字提示)
+      OwnerPassport: "[请在此处粘贴房东护照]",
+      TenantPassport: "[请在此处粘贴租客护照]"
     };
     
     // Debug: 打印渲染数据结构，特别是数组部分
@@ -71,28 +72,36 @@ export const generateContract = async (data: ContractData) => {
     });
     
     // 5. 渲染文档
-    doc.render({
-      ...renderData,
-      // 兼容旧模板中的变量名 (直接使用 excelParser 的字段名)
-      ProjectName: data.project,
-      RoomNo: data.room,
-      Location: data.location,
-      FullAddress: data.fullAddress,
-      Owner: data.ownerName,
-      OwnerPassportNum: data.ownerId,
-      BankInfo: data.bankInfo,
-      TenantName: data.tenantName,
-      TenantPassportNum: data.tenantId,
-      Rent: data.rentFormatted,
-      Deposit: data.depositFormatted,
-      CheckIn: data.checkIn,
-      CheckOut: data.checkOut,
-      CleaningFee: data.cleaningFeeFormatted,
-      ACFee: data.acFeeFormatted,
-      LatePenalty: data.latePenaltyFormatted,
-      // 兼容付款计划表
-      PaymentSchedule: data.schedule
-    });
+    try {
+      doc.render({
+        ...renderData,
+        // 兼容旧模板中的变量名 (直接使用 excelParser 的字段名)
+        ProjectName: data.project,
+        RoomNo: data.room,
+        Location: data.location,
+        FullAddress: data.fullAddress,
+        Owner: data.ownerName,
+        OwnerPassportNum: data.ownerId,
+        BankInfo: data.bankInfo,
+        TenantName: data.tenantName,
+        TenantPassportNum: data.tenantId,
+        Rent: data.rentFormatted,
+        Deposit: data.depositFormatted,
+        CheckIn: data.checkIn,
+        CheckOut: data.checkOut,
+        CleaningFee: data.cleaningFeeFormatted,
+        ACFee: data.acFeeFormatted,
+        LatePenalty: data.latePenaltyFormatted,
+        // 兼容付款计划表
+        PaymentSchedule: data.schedule,
+        // 图片占位符
+        OwnerPassport: "[请在此处粘贴房东护照]",
+        TenantPassport: "[请在此处粘贴租客护照]"
+      });
+    } catch (renderError: any) {
+      console.error('[ContractGen] Render Phase Error:', renderError);
+      throw renderError;
+    }
     
     // 6. 生成 blob
     const out = doc.getZip().generate({
@@ -108,6 +117,12 @@ export const generateContract = async (data: ContractData) => {
   } catch (error: any) {
     console.error('Error generating contract:', error);
     
+    // 终极调试：打印完整的错误对象结构
+    console.log('Error Object Keys:', Object.keys(error));
+    if (error.properties) {
+      console.log('Error Properties:', JSON.stringify(error.properties, null, 2));
+    }
+
     // 处理 docxtemplater 的 MultiError
     if (error.properties && error.properties.errors) {
       console.error('--- Docxtemplater MultiError Details ---');
@@ -127,8 +142,13 @@ export const generateContract = async (data: ContractData) => {
       console.error('----------------------------------------');
       
       // 抛出更友好的错误信息
-      const firstError = error.properties.errors[0];
-      const explanation = firstError?.properties?.explanation || error.message;
+      let explanation = error.message;
+      if (error.properties && Array.isArray(error.properties.errors) && error.properties.errors.length > 0) {
+        const firstError = error.properties.errors[0];
+        if (firstError.properties && firstError.properties.explanation) {
+          explanation = firstError.properties.explanation;
+        }
+      }
       throw new Error(`模板变量错误: ${explanation}`);
     }
     

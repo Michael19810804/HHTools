@@ -404,7 +404,8 @@ const UploadPage: React.FC = () => {
               <TextArea rows={4} placeholder="请输入给签字人的留言..." />
             </Form.Item>
 
-            <Divider orientation="left">签字人管理</Divider>
+            {/* 签字人列表 */}
+            <Divider>签字人管理</Divider>
             <Form.List name="signers">
               {(fields, { add, remove }) => (
                 <>
