@@ -9,3 +9,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const SUPABASE_ANON_KEY = supabaseAnonKey;
+export const MEMFIRE_FUNCTION_URL = 'https://functions2.memfiredb.com/d6c963og91hgk1gnqgc0';

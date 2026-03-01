@@ -1,0 +1,7 @@
+{
+  "name": "send-email-resend",
+  "version": "1.0.0",
+  "description": "Email Service via Resend API",
+  "main": "index.js",
+  "dependencies": {}
+}

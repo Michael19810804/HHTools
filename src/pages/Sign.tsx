@@ -87,6 +87,7 @@ const Sign: React.FC = () => {
         setNumPages(pdf.numPages);
       }
 
+      // 6. If user is a viewer, we wait for manual confirmation
     } catch (error: any) {
       console.error('Error loading document:', error);
       message.error(error.message || '加载文档失败');
@@ -149,6 +150,31 @@ const Sign: React.FC = () => {
     setSignModalVisible(true);
   };
 
+  // Check if all signers (including viewers) have signed/read
+  const checkAllCompleted = async (docId: string) => {
+    try {
+      const { data: allSigners, error } = await supabase
+        .from('signers')
+        .select('status')
+        .eq('document_id', docId);
+
+      if (error) throw error;
+
+      const allDone = allSigners?.every(s => s.status === 'signed');
+      if (allDone) {
+        // Update document status to completed
+        await supabase
+          .from('documents')
+          .update({ status: 'completed' })
+          .eq('id', docId);
+        
+        message.success('文档已全部完成！');
+      }
+    } catch (err) {
+      console.error('Error checking completion:', err);
+    }
+  };
+
   const handleSignSubmit = async () => {
     if (sigCanvas.current?.isEmpty()) {
       message.warning('请先签名');
@@ -195,6 +221,9 @@ const Sign: React.FC = () => {
         // Update local signer data
         setSignerData({ ...signerData, status: 'signed' });
         message.success('所有签字已完成！');
+        
+        // Check global completion
+        await checkAllCompleted(docData.id);
       } else {
         message.success('签字保存成功，请继续签署剩余区域');
       }
@@ -204,6 +233,30 @@ const Sign: React.FC = () => {
     } catch (error: any) {
       console.error('Submit error:', error);
       message.error('提交失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewerRead = async () => {
+    try {
+      setLoading(true);
+      const { error: updateError } = await supabase
+        .from('signers')
+        .update({ status: 'signed' })
+        .eq('id', signerData.id);
+
+      if (updateError) throw updateError;
+
+      setSignerData({ ...signerData, status: 'signed' });
+      message.success('已确认为已读');
+      
+      // Check global completion
+      await checkAllCompleted(docData.id);
+
+    } catch (error: any) {
+      console.error('Update error:', error);
+      message.error('确认失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -249,9 +302,11 @@ const Sign: React.FC = () => {
             />
           </div>
 
-          {signerData?.status === 'signed' && (
+          {signerData?.status === 'signed' ? (
              <Button type="primary" disabled icon={<CheckCircleOutlined />}>已完成签署</Button>
-          )}
+          ) : signerData?.role === 'viewer' ? (
+             <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleViewerRead}>确认已读</Button>
+          ) : null}
         </div>
       </header>
 

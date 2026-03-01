@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, MEMFIRE_FUNCTION_URL, SUPABASE_ANON_KEY } from './supabase';
 
 const EMAIL_TEMPLATES: Record<string, any> = {
   zh: {
@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, any> = {
     },
     complete: {
       subject: "Document Completed: {{title}}",
-      body: "Hello {{name}},\n\nThe document \"{{title}}\" has been signed by all parties.\n\nPlease click the link below to download the final document:\n{{link}}"
+      body: "Hello {{name}},\n\nThe document \"{{title}}\" has been signed by all parties (including viewers).\n\nPlease click the link below to download the final document:\n{{link}}"
     }
   },
   th: {
@@ -46,9 +46,7 @@ interface SendEmailParams {
   };
 }
 
-// In a real production app, this would call a Supabase Edge Function or backend API.
-// For this MVP/Demo, we will simulate the email sending and log it to the console,
-// and potentially store it in a 'notifications' table if we had one.
+// For this MVP/Demo, we will call the Supabase Edge Function
 export const sendEmail = async ({ to, templateType, language, data }: SendEmailParams) => {
   // Fallback to English if language not supported
   const lang = EMAIL_TEMPLATES[language] ? language : 'en';
@@ -64,32 +62,66 @@ export const sendEmail = async ({ to, templateType, language, data }: SendEmailP
     body = body.replace(regex, value || '');
   });
 
-  console.log('--- SIMULATING EMAIL SENDING ---');
-  console.log(`To: ${to}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Body:\n${body}`);
-  console.log('--------------------------------');
+  // Convert plain text body to simple HTML for better formatting
+  const htmlBody = body.replace(/\n/g, '<br>');
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    // MemFire Cloud Function Direct Call
+    const response = await fetch(`${MEMFIRE_FUNCTION_URL}/send_email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        text: body,
+        html: htmlBody
+      })
+    });
 
-  return { success: true };
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Function failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    return { success: true };
+
+  } catch (error: any) {
+    console.error('Failed to send email:', error);
+    // Fallback log for development if function fails
+    console.log(`Failed Email To: ${to}`);
+    return { success: false, error };
+  }
 };
 
 export const sendInviteEmails = async (documentId: string) => {
-  // 1. Fetch document and signers
-  const { data: doc } = await supabase.from('documents').select('*, users(name)').eq('id', documentId).single();
+  // 1. Fetch document (Remove users join to avoid 400 error if FK is missing)
+  const { data: doc } = await supabase.from('documents').select('*').eq('id', documentId).single();
   const { data: signers } = await supabase.from('signers').select('*').eq('document_id', documentId);
 
   if (!doc || !signers) return;
 
-  const senderName = doc.users?.name || 'HH Tools User';
-  const baseUrl = window.location.origin;
+  // 2. Try to fetch sender name manually
+  let senderName = 'HH Tools User';
+  if (doc.user_id) {
+    const { data: user } = await supabase.from('users').select('name').eq('id', doc.user_id).single();
+    if (user?.name) senderName = user.name;
+  }
+  
+  // Use production URL if in development environment to ensure recipients get a valid link
+  // Or use window.location.origin if it's already deployed
+  const PRODUCTION_URL = 'https://trae58e0l77j.vercel.app';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const baseUrl = isLocal ? PRODUCTION_URL : window.location.origin;
 
-  // 2. Send emails
+  // 3. Send emails
   for (const signer of signers) {
-    // Determine language: Viewer -> 'en', Signer -> doc.language
-    const lang = signer.role === 'viewer' ? 'en' : doc.language;
+    // Determine language: Viewer -> 'en', Signer -> signer.language or fallback to doc.language
+    const lang = signer.role === 'viewer' ? 'en' : (signer.language || doc.language || 'en');
     
     const link = `${baseUrl}/sign/${signer.token}`;
 

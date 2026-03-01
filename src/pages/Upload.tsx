@@ -214,6 +214,9 @@ const UploadPage: React.FC = () => {
     const signers = form.getFieldValue('signers') || [];
     if (signers.length > 0) {
       for (let i = 0; i < signers.length; i++) {
+        // Skip viewers
+        if (signers[i].role === 'viewer') continue;
+
         const hasField = fields.some(f => f.signerIndex === i);
         if (!hasField) {
           message.warning(`签字人 ${signers[i].name || (i + 1)} 还没有分配签字区域`);
@@ -254,29 +257,31 @@ const UploadPage: React.FC = () => {
 
       // 3. Create Signers Records with Fields
       
-      // Combine manual signers and fixed viewers
-      const allSigners = [
-        ...signers.map((s: any, index: number) => ({
+      // Filter only signers for index calculation (viewers have index 0)
+      let signerCounter = 0;
+
+      const allSigners = signers.map((s: any) => {
+        const isSigner = s.role === 'signer';
+        const currentIndex = isSigner ? ++signerCounter : 0;
+        
+        // Find the original index in the form list to match fields
+        // We need to be careful here if the user reordered or deleted items.
+        // But since we use fields.filter(f => f.signerIndex === index), 'index' refers to the array index in 'signers'.
+        // Let's find the index of this signer object in the 'signers' array.
+        const originalIndex = signers.indexOf(s);
+
+        return {
           document_id: docData.id,
           email: s.email,
           name: s.name,
-          role: 'signer',
-          order_index: index + 1,
+          role: s.role,
+          order_index: currentIndex,
           token: Math.random().toString(36).substring(2) + Date.now().toString(36), 
           status: 'pending',
-          fields: fields.filter(f => f.signerIndex === index) // Add fields for this signer
-        })),
-        ...FIXED_VIEWERS.map((v) => ({
-          document_id: docData.id,
-          email: v.email,
-          name: v.name,
-          role: 'viewer',
-          order_index: 0,
-          token: Math.random().toString(36).substring(2) + Date.now().toString(36),
-          status: 'pending',
-          fields: [] // Viewers don't sign
-        }))
-      ];
+          fields: isSigner ? fields.filter(f => f.signerIndex === originalIndex) : [], // Add fields only if signer
+          language: s.language || 'en'
+        };
+      });
 
       const { error: signersError } = await supabase
         .from('signers')
@@ -316,6 +321,14 @@ const UploadPage: React.FC = () => {
         originFileObj: file as RcFile,
       };
       setFileList([uploadFile]);
+      
+      // Auto-fill title with filename (without extension)
+      const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      form.setFieldsValue({ 
+        title: fileNameWithoutExt,
+        email_subject: fileNameWithoutExt // Auto-fill email subject
+      });
+      
       return false;
     },
     fileList,
@@ -324,6 +337,11 @@ const UploadPage: React.FC = () => {
   const getSignerName = (index: number) => {
     const signers = form.getFieldValue('signers');
     return signers && signers[index] ? signers[index].name : `签字人 ${index + 1}`;
+  };
+
+  const getSignerRole = (index: number) => {
+    const signers = form.getFieldValue('signers');
+    return signers && signers[index] ? signers[index].role : 'signer';
   };
 
   return (
@@ -345,7 +363,13 @@ const UploadPage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={handleUpload}
-          initialValues={{ language: 'en', signers: [{}] }}
+          initialValues={{ 
+            signers: [
+              ...FIXED_VIEWERS.map(v => ({ name: v.name, email: v.email, role: 'viewer', language: 'en' })),
+              {}, // Empty signer for user to fill
+            ],
+            email_body: "Dear user, welcome to the MXL-HH Signature Service System. You can sign documents directly via email. Once completed, the system will automatically collect all signatories' information and send the final text to you as a backup."
+          }}
         >
           {/* Step 0: File Upload */}
           <div className={currentStep === 0 ? 'block' : 'hidden'}>
@@ -381,14 +405,7 @@ const UploadPage: React.FC = () => {
           {/* Step 1: Signer Settings */}
           <div className={currentStep === 1 ? 'block' : 'hidden'}>
             <Divider style={{ borderColor: '#e5e7eb' }}>邮件通知设置</Divider>
-            <Form.Item
-              name="language"
-              label="签字人通知语言"
-              rules={[{ required: true }]}
-            >
-              <Select options={LANGUAGES} />
-            </Form.Item>
-
+            
             <Form.Item
               name="email_subject"
               label="邮件主题"
@@ -413,6 +430,17 @@ const UploadPage: React.FC = () => {
                     <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
                       <Form.Item
                         {...restField}
+                        name={[name, 'role']}
+                        initialValue="signer"
+                        rules={[{ required: true, message: '选择角色' }]}
+                      >
+                        <Select style={{ width: 100 }} options={[
+                          { label: '签字人', value: 'signer' },
+                          { label: '阅览者', value: 'viewer' }
+                        ]} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
                         name={[name, 'name']}
                         rules={[{ required: true, message: '缺少姓名' }]}
                       >
@@ -423,7 +451,15 @@ const UploadPage: React.FC = () => {
                         name={[name, 'email']}
                         rules={[{ required: true, message: '缺少邮箱' }, { type: 'email', message: '邮箱格式不正确' }]}
                       >
-                        <Input placeholder="邮箱地址" style={{ width: 300 }} />
+                        <Input placeholder="邮箱地址" style={{ width: 250 }} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'language']}
+                        initialValue="en"
+                        rules={[{ required: true, message: '选择语言' }]}
+                      >
+                        <Select style={{ width: 100 }} options={LANGUAGES} />
                       </Form.Item>
                       {fields.length > 1 && (
                         <MinusCircleOutlined onClick={() => remove(name)} />
@@ -469,14 +505,19 @@ const UploadPage: React.FC = () => {
                      onChange={setSelectedSignerIndex} 
                      className="w-full"
                    >
-                     {form.getFieldValue('signers')?.map((signer: any, index: number) => (
-                       <Option key={index} value={index}>
-                         <div className="flex items-center gap-2">
-                           <div className={`w-3 h-3 rounded-full bg-${['blue','green','orange','purple'][index % 4]}-500`}></div>
-                           {signer.name || `签字人 ${index + 1}`}
-                         </div>
-                       </Option>
-                     ))}
+                     {form.getFieldValue('signers')?.map((signer: any, index: number) => {
+                       // Only show actual signers, not viewers
+                       if (signer.role === 'viewer') return null;
+                       
+                       return (
+                         <Option key={index} value={index}>
+                           <div className="flex items-center gap-2">
+                             <div className={`w-3 h-3 rounded-full bg-${['blue','green','orange','purple'][index % 4]}-500`}></div>
+                             {signer.name || `签字人 ${index + 1}`}
+                           </div>
+                         </Option>
+                       );
+                     })}
                    </Select>
                  </div>
 

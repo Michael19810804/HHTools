@@ -1,20 +1,251 @@
-import React from 'react';
-import { Button, Layout, Typography, Card, Statistic, Row, Col, Breadcrumb } from 'antd';
-import { LogoutOutlined, FileTextOutlined, CloudUploadOutlined, CheckCircleOutlined, AppstoreOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { 
+  Button, 
+  Layout, 
+  Typography, 
+  Card, 
+  Statistic, 
+  Row, 
+  Col, 
+  Breadcrumb, 
+  Table, 
+  Tag, 
+  Space, 
+  Modal, 
+  List, 
+  Tooltip, 
+  message 
+} from 'antd';
+import { 
+  LogoutOutlined, 
+  FileTextOutlined, 
+  CloudUploadOutlined, 
+  CheckCircleOutlined, 
+  AppstoreOutlined,
+  EyeOutlined,
+  CopyOutlined,
+  LinkOutlined,
+  DeleteOutlined,
+  DownloadOutlined
+} from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../utils/supabase';
+import dayjs from 'dayjs';
+import { saveAs } from 'file-saver';
+import { generateSignedPdf } from '../utils/pdfGenerator';
 
 const { Header, Content } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
+
+interface Signer {
+  id: string;
+  name: string;
+  email: string;
+  role: 'signer' | 'viewer';
+  status: 'pending' | 'signed' | 'declined';
+  token: string;
+  order_index: number;
+}
+
+interface Document {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'expired';
+  created_at: string;
+  signers: Signer[];
+}
 
 const SignDashboard: React.FC = () => {
   const { signOut, user } = useAuthStore();
   const navigate = useNavigate();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ pending: 0, inProgress: 0, completed: 0 });
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const fetchDocuments = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          signers (*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const docs = data as Document[];
+      setDocuments(docs);
+
+      // Calculate stats
+      const newStats = {
+        pending: docs.filter(d => d.status === 'pending').length,
+        inProgress: docs.filter(d => d.status === 'in_progress').length,
+        completed: docs.filter(d => d.status === 'completed').length,
+      };
+      setStats(newStats);
+
+    } catch (error: any) {
+      console.error('Error fetching documents:', error);
+      message.error('加载文档列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
+
+  const deleteDocument = async (id: string) => {
+    try {
+      const { error } = await supabase.from('documents').delete().eq('id', id);
+      if (error) throw error;
+      message.success('文档已删除');
+      fetchDocuments();
+    } catch (error) {
+      message.error('删除失败');
+    }
+  };
+
+  const getStatusTag = (status: string) => {
+    const map: Record<string, string> = {
+      pending: 'orange',
+      in_progress: 'blue',
+      completed: 'green',
+      expired: 'red',
+    };
+    return <Tag color={map[status] || 'default'}>{status.toUpperCase()}</Tag>;
+  };
+
+  const copyLink = (token: string) => {
+    const link = `${window.location.origin}/sign/${token}`;
+    navigator.clipboard.writeText(link);
+    message.success('签署链接已复制！');
+  };
+
+  const handleDownload = async (doc: Document) => {
+    try {
+      message.loading({ content: '正在生成PDF...', key: 'pdfGen' });
+      
+      // 1. Get document details
+      const { data: documentData, error: docError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', doc.id)
+        .single();
+      
+      if (docError) throw docError;
+
+      // 2. Download original PDF
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from('documents')
+        .download(documentData.file_url);
+
+      if (fileError) throw fileError;
+      const originalPdfBuffer = await fileData.arrayBuffer();
+
+      // 3. Get signatures
+      const { data: signatures, error: sigError } = await supabase
+        .from('signatures')
+        .select('*')
+        .eq('document_id', doc.id);
+
+      if (sigError) throw sigError;
+
+      // 4. Generate signed PDF
+      const signedPdfBytes = await generateSignedPdf(originalPdfBuffer, signatures || []);
+
+      // 5. Trigger download
+      const blob = new Blob([signedPdfBytes], { type: 'application/pdf' });
+      saveAs(blob, `${documentData.title}_signed.pdf`);
+
+      message.success({ content: '下载成功', key: 'pdfGen' });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      message.error({ content: '生成PDF失败', key: 'pdfGen' });
+    }
+  };
+
+  const columns = [
+    {
+      title: '文档标题',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text: string) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm'),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => getStatusTag(status),
+    },
+    {
+      title: '签署进度',
+      key: 'progress',
+      render: (_: any, record: Document) => {
+        const total = record.signers.filter(s => s.role === 'signer').length;
+        const signed = record.signers.filter(s => s.role === 'signer' && s.status === 'signed').length;
+        return <span>{signed} / {total}</span>;
+      }
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: Document) => (
+        <Space size="middle">
+          <Button 
+            type="link" 
+            icon={<DownloadOutlined />} 
+            onClick={() => handleDownload(record)}
+            disabled={record.status !== 'completed'}
+            title={record.status !== 'completed' ? '所有签字完成后才可下载' : '下载已签字文档'}
+          >
+            下载PDF
+          </Button>
+          <Button 
+            type="link" 
+            icon={<EyeOutlined />} 
+            onClick={() => {
+              setSelectedDoc(record);
+              setIsModalVisible(true);
+            }}
+          >
+            详情/链接
+          </Button>
+          <Button 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => {
+              Modal.confirm({
+                title: '确认删除',
+                content: '确定要删除这个文档吗？此操作无法撤销。',
+                onOk: () => deleteDocument(record.id)
+              });
+            }}
+          />
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <Layout className="min-h-screen">
@@ -69,42 +300,112 @@ const SignDashboard: React.FC = () => {
 
           <Row gutter={16} className="mb-8">
             <Col span={8}>
-              <Card>
+              <Card bordered={false} className="shadow-sm">
                 <Statistic 
                   title="待处理" 
-                  value={12} 
-                  prefix={<FileTextOutlined className="text-blue-500" />} 
+                  value={stats.pending} 
+                  prefix={<FileTextOutlined className="text-orange-500" />} 
                 />
               </Card>
             </Col>
             <Col span={8}>
-              <Card>
+              <Card bordered={false} className="shadow-sm">
                 <Statistic 
                   title="进行中" 
-                  value={5} 
-                  prefix={<CloudUploadOutlined className="text-orange-500" />} 
+                  value={stats.inProgress} 
+                  prefix={<CloudUploadOutlined className="text-blue-500" />} 
                 />
               </Card>
             </Col>
             <Col span={8}>
-              <Card>
+              <Card bordered={false} className="shadow-sm">
                 <Statistic 
                   title="已完成" 
-                  value={88} 
+                  value={stats.completed} 
                   prefix={<CheckCircleOutlined className="text-green-500" />} 
                 />
               </Card>
             </Col>
           </Row>
 
-          <Card title="最近文档" className="shadow-sm">
-            <div className="text-center py-12 text-gray-400">
-              <FileTextOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-              <p>暂无文档，点击右上角上传</p>
-            </div>
+          <Card className="shadow-sm" bodyStyle={{ padding: 0 }}>
+            <Table 
+              columns={columns} 
+              dataSource={documents} 
+              rowKey="id" 
+              loading={loading}
+              pagination={{ pageSize: 10 }}
+            />
           </Card>
         </div>
       </Content>
+
+      <Modal
+        title="文档详情 & 签署链接"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={700}
+      >
+        {selectedDoc && (
+          <div>
+            <div className="mb-4">
+              <Text strong>文档标题: </Text> <Text>{selectedDoc.title}</Text>
+              <br />
+              <Text strong>创建时间: </Text> <Text>{dayjs(selectedDoc.created_at).format('YYYY-MM-DD HH:mm:ss')}</Text>
+            </div>
+            
+            <Title level={5}>签字人列表</Title>
+            <List
+              dataSource={selectedDoc.signers.sort((a, b) => a.order_index - b.order_index)}
+              renderItem={signer => (
+                <List.Item
+                  actions={[
+                    <Button 
+                      key="link" 
+                      type="primary" 
+                      ghost 
+                      size="small" 
+                      icon={<CopyOutlined />} 
+                      onClick={() => copyLink(signer.token)}
+                    >
+                      复制签署链接
+                    </Button>,
+                    <Button
+                      key="open"
+                      type="link"
+                      size="small"
+                      icon={<LinkOutlined />}
+                      onClick={() => window.open(`/sign/${signer.token}`, '_blank')}
+                    >
+                      打开
+                    </Button>
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space>
+                        <Text strong>{signer.name}</Text>
+                        <Tag color={signer.role === 'viewer' ? 'default' : 'blue'}>{signer.role.toUpperCase()}</Tag>
+                        {signer.status === 'signed' ? (
+                          <Tag color="green" icon={<CheckCircleOutlined />}>已签署</Tag>
+                        ) : (
+                          <Tag color="orange">等待中</Tag>
+                        )}
+                      </Space>
+                    }
+                    description={signer.email}
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
+      </Modal>
     </Layout>
   );
 };
