@@ -120,8 +120,8 @@ export const sendInviteEmails = async (documentId: string) => {
 
   // 3. Send emails
   for (const signer of signers) {
-    // Determine language: Viewer -> 'en', Signer -> signer.language or fallback to doc.language
-    const lang = signer.role === 'viewer' ? 'en' : (signer.language || doc.language || 'en');
+    // Determine language: Viewer -> 'en', Signer -> 'en' (Always English as requested)
+    const lang = 'en';
     
     const link = `${baseUrl}/sign/${signer.token}`;
 
