@@ -14,7 +14,8 @@ import {
   Modal, 
   List, 
   Tooltip, 
-  message 
+  message,
+  Input 
 } from 'antd';
 import { 
   LogoutOutlined, 
@@ -26,7 +27,8 @@ import {
   CopyOutlined,
   LinkOutlined,
   DeleteOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +66,7 @@ const SignDashboard: React.FC = () => {
   const [stats, setStats] = useState({ pending: 0, inProgress: 0, completed: 0 });
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   const fetchDocuments = async () => {
     if (!user) return;
@@ -98,6 +101,20 @@ const SignDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const filteredDocuments = documents.filter(doc => {
+    if (!searchText) return true;
+    const lowerSearch = searchText.toLowerCase();
+    
+    // Search in title
+    if (doc.title.toLowerCase().includes(lowerSearch)) return true;
+    
+    // Search in signers' emails or names
+    return doc.signers.some(signer => 
+      signer.email.toLowerCase().includes(lowerSearch) || 
+      signer.name.toLowerCase().includes(lowerSearch)
+    );
+  });
 
   useEffect(() => {
     fetchDocuments();
@@ -288,14 +305,24 @@ const SignDashboard: React.FC = () => {
 
           <div className="flex justify-between items-center mb-8">
             <Title level={2} style={{ margin: 0 }}>文档管理</Title>
-            <Button 
-              type="primary" 
-              size="large" 
-              icon={<CloudUploadOutlined />}
-              onClick={() => navigate('/tools/sign/upload')}
-            >
-              上传新文档
-            </Button>
+            <Space>
+              <Input 
+                placeholder="搜索文档标题或签署人..." 
+                prefix={<SearchOutlined />} 
+                style={{ width: 250 }}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                allowClear
+              />
+              <Button 
+                type="primary" 
+                size="large" 
+                icon={<CloudUploadOutlined />}
+                onClick={() => navigate('/tools/sign/upload')}
+              >
+                上传新文档
+              </Button>
+            </Space>
           </div>
 
           <Row gutter={16} className="mb-8">
@@ -331,7 +358,7 @@ const SignDashboard: React.FC = () => {
           <Card className="shadow-sm" bodyStyle={{ padding: 0 }}>
             <Table 
               columns={columns} 
-              dataSource={documents} 
+              dataSource={filteredDocuments} 
               rowKey="id" 
               loading={loading}
               pagination={{ pageSize: 10 }}
