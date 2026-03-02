@@ -289,7 +289,7 @@ const Sign: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-gray-800">{docData?.title || '文档签署'}</h1>
           <p className="text-sm text-gray-500">
-            {signerData?.role === 'viewer' ? '您是阅览者' : `签署人: ${signerData?.name}`}
+            {signerData?.role === 'viewer' ? 'You are a viewer' : `Signer: ${signerData?.name}`}
           </p>
         </div>
         <div className="flex gap-4">
@@ -313,9 +313,9 @@ const Sign: React.FC = () => {
           </div>
 
           {signerData?.status === 'signed' ? (
-             <Button type="primary" disabled icon={<CheckCircleOutlined />}>已完成签署</Button>
+             <Button type="primary" disabled icon={<CheckCircleOutlined />}>Completed</Button>
           ) : signerData?.role === 'viewer' ? (
-             <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleViewerRead}>确认已读</Button>
+             <Button type="primary" icon={<CheckCircleOutlined />} onClick={handleViewerRead}>Mark as Read</Button>
           ) : null}
         </div>
       </header>
@@ -349,7 +349,7 @@ const Sign: React.FC = () => {
                  {signature ? (
                    <img src={signature.signature_data} alt="Signature" style={{ maxWidth: '100%', maxHeight: '100%' }} />
                  ) : (
-                   <div className="text-blue-600 font-bold text-sm">点击签字</div>
+                   <div className="text-blue-600 font-bold text-sm">Click to Sign</div>
                  )}
                </div>
              );
@@ -359,15 +359,15 @@ const Sign: React.FC = () => {
 
       {/* Signature Modal */}
       <Modal
-        title="请在下方签名"
+        title="Please Sign Below"
         open={signModalVisible}
         onCancel={() => setSignModalVisible(false)}
         footer={[
           <Button key="clear" icon={<ClearOutlined />} onClick={() => sigCanvas.current?.clear()}>
-            清除
+            Clear
           </Button>,
           <Button key="submit" type="primary" icon={<SaveOutlined />} onClick={handleSignSubmit} loading={loading}>
-            确认并提交
+            Confirm & Submit
           </Button>,
         ]}
         width={600}
@@ -384,7 +384,7 @@ const Sign: React.FC = () => {
           />
         </div>
         <p className="text-center text-gray-400 mt-2 text-sm">
-          使用鼠标或触控板在上方区域书写您的签名
+          Use mouse or touch pad to sign above
         </p>
       </Modal>
     </div>
