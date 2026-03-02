@@ -156,7 +156,7 @@ const SignDashboard: React.FC = () => {
       if (fileError) throw fileError;
       const originalPdfBuffer = await fileData.arrayBuffer();
 
-      // 3. Get signatures
+      // 3. Get signatures (from ALL signers)
       const { data: signatures, error: sigError } = await supabase
         .from('signatures')
         .select('*')

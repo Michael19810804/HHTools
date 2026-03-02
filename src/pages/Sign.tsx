@@ -163,11 +163,13 @@ const Sign: React.FC = () => {
       const allDone = allSigners?.every(s => s.status === 'signed');
       if (allDone) {
         // Update document status to completed
-        await supabase
+        const { error: docUpdateError } = await supabase
           .from('documents')
           .update({ status: 'completed' })
           .eq('id', docId);
         
+        if (docUpdateError) throw docUpdateError;
+
         message.success('文档已全部完成！');
       }
     } catch (err) {
