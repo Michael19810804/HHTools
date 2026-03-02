@@ -162,13 +162,21 @@ const Sign: React.FC = () => {
 
       const allDone = allSigners?.every(s => s.status === 'signed');
       if (allDone) {
-        // Update document status to completed
-        const { error: docUpdateError } = await supabase
-          .from('documents')
-          .update({ status: 'completed' })
-          .eq('id', docId);
-        
-        if (docUpdateError) throw docUpdateError;
+        // Use RPC function to update status (bypass RLS)
+        const { error: rpcError } = await supabase.rpc('complete_document_status', {
+          doc_id: docId
+        });
+
+        if (rpcError) {
+          console.error('Failed to complete document via RPC:', rpcError);
+          // Fallback to direct update if RPC fails (e.g. function not created yet)
+          const { error: directError } = await supabase
+            .from('documents')
+            .update({ status: 'completed' })
+            .eq('id', docId);
+            
+          if (directError) throw directError;
+        }
 
         message.success('文档已全部完成！');
       }
