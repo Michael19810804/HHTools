@@ -363,27 +363,28 @@ const Sign: React.FC = () => {
         open={signModalVisible}
         onCancel={() => setSignModalVisible(false)}
         footer={[
-          <Button key="clear" icon={<ClearOutlined />} onClick={() => sigCanvas.current?.clear()}>
+          <Button key="clear" size="large" icon={<ClearOutlined />} onClick={() => sigCanvas.current?.clear()}>
             Clear
           </Button>,
-          <Button key="submit" type="primary" icon={<SaveOutlined />} onClick={handleSignSubmit} loading={loading}>
+          <Button key="submit" type="primary" size="large" icon={<SaveOutlined />} onClick={handleSignSubmit} loading={loading}>
             Confirm & Submit
           </Button>,
         ]}
-        width={600}
+        width={1000} // Increased from 600
+        style={{ top: 20 }}
       >
-        <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex justify-center">
           <SignatureCanvas
             ref={sigCanvas}
             canvasProps={{
-              width: 550,
-              height: 300,
+              width: 900,  // Increased from 550
+              height: 500, // Increased from 300
               className: 'cursor-crosshair'
             }}
             backgroundColor="rgba(255, 255, 255, 0)"
           />
         </div>
-        <p className="text-center text-gray-400 mt-2 text-sm">
+        <p className="text-center text-gray-400 mt-4 text-lg">
           Use mouse or touch pad to sign above
         </p>
       </Modal>

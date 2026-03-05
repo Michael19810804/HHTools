@@ -143,8 +143,8 @@ const UploadPage: React.FC = () => {
       page: 1, // Default to page 1
       x: 100,
       y: 100,
-      width: 120,
-      height: 60,
+      width: 240, // Doubled from 120
+      height: 120, // Doubled from 60
       type: 'signature',
       signerIndex: selectedSignerIndex,
     };
