@@ -114,7 +114,7 @@ export const sendInviteEmails = async (documentId: string) => {
   
   // Use production URL if in development environment to ensure recipients get a valid link
   // Or use window.location.origin if it's already deployed
-  const PRODUCTION_URL = 'https://trae58e0l77j.vercel.app';
+  const PRODUCTION_URL = 'https://sign.mxlhhfamily.com';
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const baseUrl = isLocal ? PRODUCTION_URL : window.location.origin;
 
