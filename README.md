@@ -23,3 +23,5 @@ A unified internal tools platform for HH company, featuring electronic signature
 ## Deployment
 
 This project is configured for Vercel deployment.
+
+For Docker deployment (e.g., self-hosted on HK/SG server), see [DEPLOY.md](DEPLOY.md).
