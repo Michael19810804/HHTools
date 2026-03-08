@@ -73,14 +73,25 @@ const Sign: React.FC = () => {
       // 4. Download PDF file
       // Check if we already have the PDF loaded to avoid re-downloading on every refresh
       if (!pdfDoc) {
-        const { data: fileData, error: fileError } = await supabase.storage
+        // Use getPublicUrl for public buckets to avoid CORS issues with download() method sometimes
+        // MemFire Cloud Public Bucket should allow public access
+        const { data: publicUrlData } = supabase.storage
           .from('documents')
-          .download(doc.file_url);
+          .getPublicUrl(doc.file_url);
 
-        if (fileError) throw fileError;
+        if (!publicUrlData || !publicUrlData.publicUrl) {
+          throw new Error('无法获取文档链接');
+        }
+
+        // Fetch the file content
+        const response = await fetch(publicUrlData.publicUrl);
+        if (!response.ok) {
+          throw new Error(`无法下载文档: ${response.statusText}`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
 
         // 5. Load PDF
-        const arrayBuffer = await fileData.arrayBuffer();
         const loadingTask = getDocument(arrayBuffer);
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
