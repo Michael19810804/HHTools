@@ -1,9 +1,7 @@
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import { GlobalWorkerOptions, getDocument, version } from 'pdfjs-dist';
 
-// Import worker as a URL so Vite can bundle it correctly
-// This ensures the worker is served from our own server, not a blocked CDN
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-GlobalWorkerOptions.workerSrc = pdfWorker;
+// Use Cloudflare cdnjs for global reliability (including China)
+// Local bundling caused MIME type issues with Nginx reverse proxy
+GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
 
 export { getDocument };

@@ -107,10 +107,10 @@ const Sign: React.FC = () => {
 
         // 5. Load PDF
         // Important: pdfjs-dist needs cMapUrl to render some characters correctly
-        // We use unpkg as a fallback, but ideally this should also be local
+        // Use Cloudflare cdnjs for reliability
         const loadingTask = getDocument({
           data: arrayBuffer,
-          cMapUrl: `https://unpkg.com/pdfjs-dist@4.4.168/cmaps/`, 
+          cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/cmaps/`, 
           cMapPacked: true,
         });
         const pdf = await loadingTask.promise;
