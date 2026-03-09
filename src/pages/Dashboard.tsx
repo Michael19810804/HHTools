@@ -35,11 +35,11 @@ const Dashboard: React.FC = () => {
       bg: 'bg-purple-50',
     },
     {
-      title: 'MXL 客户门户 (Service)',
-      description: '面向终端客户的服务展示与资料提交入口',
+      title: 'PDF 工具箱 (Coming Soon)',
+      description: '合并、拆分、压缩 PDF 文档',
       icon: <FilePdfOutlined style={{ fontSize: '32px', color: '#ea580c' }} />,
-      path: '/staycare',
-      status: 'active',
+      path: '#',
+      status: 'planned',
       bg: 'bg-orange-50',
     },
     {
