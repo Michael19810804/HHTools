@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:client": "vite --mode client",
     "build": "tsc -b && vite build",
+    "build:client": "tsc -b && vite build --mode client",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit"
