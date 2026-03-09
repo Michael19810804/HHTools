@@ -8,6 +8,9 @@ import ContractTool from './pages/ContractTool';
 import DebugLogin from './pages/DebugLogin';
 import UploadPage from './pages/Upload';
 import Sign from './pages/Sign';
+import ClientLayout from './pages/client/ClientLayout';
+import ServicePortal from './pages/client/ServicePortal';
+import Apply from './pages/client/Apply';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -67,6 +70,12 @@ const App: React.FC = () => {
           />
           {/* Old routes for compatibility, redirect to new structure */}
           <Route path="/upload" element={<Navigate to="/tools/sign/upload" replace />} />
+
+          {/* StayCare Client Portal Routes */}
+          <Route path="/staycare" element={<ClientLayout />}>
+            <Route index element={<ServicePortal />} />
+            <Route path="apply" element={<Apply />} />
+          </Route>
 
           {/* Public Routes */}
           <Route path="/login/debug" element={<Navigate to="/debug" replace />} />
