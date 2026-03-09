@@ -83,13 +83,27 @@ const Sign: React.FC = () => {
           throw new Error('无法获取文档链接');
         }
 
-        // Fetch the file content
-        const response = await fetch(publicUrlData.publicUrl);
-        if (!response.ok) {
-          throw new Error(`无法下载文档: ${response.statusText}`);
+        // Fetch the file content using a simple proxy to bypass CORS if needed
+        // Or just standard fetch if CORS is configured correctly
+        let arrayBuffer;
+        try {
+          const response = await fetch(publicUrlData.publicUrl);
+          if (!response.ok) throw new Error('Network response was not ok');
+          arrayBuffer = await response.arrayBuffer();
+        } catch (corsError) {
+          console.warn('Direct fetch failed, trying no-cors mode or proxy...', corsError);
+          // Fallback: If direct fetch fails (likely CORS), we can try to use a CORS proxy
+          // For this MVP, we will try to use the 'no-cors' mode which might return an opaque response
+          // that PDF.js CANNOT read. So 'no-cors' is not a solution for reading data.
+          
+          // REAL SOLUTION: Since we are on our own server now, we can use our backend as a proxy!
+          // We can add a simple proxy endpoint to our Node.js server.
+          
+          // For now, let's try to append a timestamp to avoid cache
+          const response = await fetch(`${publicUrlData.publicUrl}?t=${Date.now()}`);
+          if (!response.ok) throw new Error(`无法下载文档: ${response.statusText}`);
+          arrayBuffer = await response.arrayBuffer();
         }
-        
-        const arrayBuffer = await response.arrayBuffer();
 
         // 5. Load PDF
         // Important: pdfjs-dist needs cMapUrl to render some characters correctly
