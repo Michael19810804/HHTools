@@ -92,7 +92,12 @@ const Sign: React.FC = () => {
         const arrayBuffer = await response.arrayBuffer();
 
         // 5. Load PDF
-        const loadingTask = getDocument(arrayBuffer);
+        // Important: pdfjs-dist needs cMapUrl to render some characters correctly
+        const loadingTask = getDocument({
+          data: arrayBuffer,
+          cMapUrl: `https://unpkg.com/pdfjs-dist@4.4.168/cmaps/`, // Hardcode version to match package.json
+          cMapPacked: true,
+        });
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
