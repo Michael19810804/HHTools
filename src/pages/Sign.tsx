@@ -93,9 +93,10 @@ const Sign: React.FC = () => {
 
         // 5. Load PDF
         // Important: pdfjs-dist needs cMapUrl to render some characters correctly
+        // We use unpkg as a fallback, but ideally this should also be local
         const loadingTask = getDocument({
           data: arrayBuffer,
-          cMapUrl: `https://unpkg.com/pdfjs-dist@4.4.168/cmaps/`, // Hardcode version to match package.json
+          cMapUrl: `https://unpkg.com/pdfjs-dist@4.4.168/cmaps/`, 
           cMapPacked: true,
         });
         const pdf = await loadingTask.promise;
