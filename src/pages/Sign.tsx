@@ -22,6 +22,7 @@ const Sign: React.FC = () => {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
+  const [errorDetails, setErrorDetails] = useState<string>('');
   const [docData, setDocData] = useState<any>(null);
   const [signerData, setSignerData] = useState<any>(null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
@@ -117,6 +118,7 @@ const Sign: React.FC = () => {
       // 6. If user is a viewer, we wait for manual confirmation
     } catch (error: any) {
       console.error('Error loading document:', error);
+      setErrorDetails(JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       message.error(error.message || '加载文档失败');
     } finally {
       setLoading(false);
@@ -303,6 +305,22 @@ const Sign: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spin size="large" tip="正在加载文档..." />
+      </div>
+    );
+  }
+
+  if (errorDetails) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-red-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
+          <h2 className="text-xl font-bold text-red-600 mb-4">加载失败</h2>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm font-mono max-h-96 whitespace-pre-wrap break-words">
+            {errorDetails}
+          </pre>
+          <div className="mt-4 text-center">
+            <Button onClick={() => window.location.reload()}>重试</Button>
+          </div>
+        </div>
       </div>
     );
   }
