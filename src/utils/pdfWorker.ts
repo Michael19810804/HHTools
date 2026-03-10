@@ -1,10 +1,11 @@
 import { GlobalWorkerOptions, getDocument as pdfjsGetDocument, version } from 'pdfjs-dist';
 
-// Use Cloudflare cdnjs for global reliability (including China)
-// Local bundling caused MIME type issues with Nginx reverse proxy
-GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
+// Use local worker for maximum reliability (bypassing CDN issues in China)
+// The worker file is manually copied to public/pdf.worker.mjs
+GlobalWorkerOptions.workerSrc = `/pdf.worker.mjs`;
 
-const CMAP_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/cmaps/`;
+// Use local cMaps (copied to public/cmaps/)
+const CMAP_URL = `/cmaps/`;
 const CMAP_PACKED = true;
 
 /**

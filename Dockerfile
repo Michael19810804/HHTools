@@ -21,6 +21,11 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
+# Copy PDF.js worker and cMaps to public directory for local serving
+RUN mkdir -p public/cmaps && \
+    cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.mjs && \
+    cp -r node_modules/pdfjs-dist/cmaps/* public/cmaps/
+
 # Build the application
 RUN npm run build
 
