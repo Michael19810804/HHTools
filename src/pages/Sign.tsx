@@ -108,11 +108,7 @@ const Sign: React.FC = () => {
         // 5. Load PDF
         // Important: pdfjs-dist needs cMapUrl to render some characters correctly
         // Use Cloudflare cdnjs for reliability
-        const loadingTask = getDocument({
-          data: arrayBuffer,
-          cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/cmaps/`, 
-          cMapPacked: true,
-        });
+        const loadingTask = getDocument(arrayBuffer);
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
