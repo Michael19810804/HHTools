@@ -50,9 +50,10 @@ const ContractTool: React.FC = () => {
       setContractData(data);
       setCurrentStep(1); // 进入下一步：核对数据
       message.success('Excel 解析成功！');
-    } catch (error) {
-      console.error(error);
-      message.error('解析 Excel 失败，请检查文件格式');
+    } catch (error: any) {
+      console.error('[ContractTool] Excel Parse Error:', error);
+      const errorMessage = error?.message ? `解析 Excel 失败：${error.message}` : '解析 Excel 失败，请检查文件格式';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -283,12 +284,13 @@ const ContractTool: React.FC = () => {
 
               {/* 右侧：付款计划表 & 按钮 */}
               <Col xs={24} lg={8}>
-                <Card title="📊 付款计划表 (Payment Schedule)" className="mb-6 shadow-sm" bodyStyle={{ padding: 0 }}>
+                <Card title={`📊 付款计划表 (Payment Schedule) · ${contractData.schedule.length} 行`} className="mb-6 shadow-sm" bodyStyle={{ padding: 0 }}>
                   <Table 
                     dataSource={contractData.schedule}
                     rowKey={(_, index) => String(index ?? 0)}
                     pagination={false}
                     size="small"
+                    scroll={contractData.schedule.length > 8 ? { y: 360 } : undefined}
                     columns={[
                       { title: 'Item', dataIndex: 'item', key: 'item', width: 60 },
                       { title: 'Date', dataIndex: 'date', key: 'date', width: 90 },
