@@ -286,9 +286,9 @@ const ContractTool: React.FC = () => {
                 <Card title="📊 付款计划表 (Payment Schedule)" className="mb-6 shadow-sm" bodyStyle={{ padding: 0 }}>
                   <Table 
                     dataSource={contractData.schedule}
+                    rowKey={(_, index) => String(index ?? 0)}
                     pagination={false}
                     size="small"
-                    scroll={{ y: 400 }}
                     columns={[
                       { title: 'Item', dataIndex: 'item', key: 'item', width: 60 },
                       { title: 'Date', dataIndex: 'date', key: 'date', width: 90 },

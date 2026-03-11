@@ -161,11 +161,10 @@ const extractFixedTable = (df: any[]): PaymentItem[] => {
   
   const dataStartRow = startRowIdx + 2; // 跳过标题和表头
   const schedule: PaymentItem[] = [];
+  let emptyRowCount = 0;
   
   for (let i = dataStartRow; i < df.length; i++) {
-    const row = df[i];
-    // 确保行有足够的数据，防止越界
-    if (!row || row.length < 4) continue;
+    const row = df[i] || [];
     
     const col0 = row[0]; // Item
     const col1 = row[1]; // Notes
@@ -177,7 +176,13 @@ const extractFixedTable = (df: any[]): PaymentItem[] => {
     const isC2Empty = !col2 || String(col2).trim() === "";
     const isC3Empty = !col3 || String(col3).trim() === "";
     
-    if (isC0Empty && isC2Empty && isC3Empty) break;
+    if (isC0Empty && isC2Empty && isC3Empty) {
+      emptyRowCount += 1;
+      if (emptyRowCount >= 2) break;
+      continue;
+    }
+
+    emptyRowCount = 0;
 
     // 过滤掉包含“审验”、“审验人”、“通过”等关键词的行
     const rowContent = (String(col0) + String(col1) + String(col2) + String(col3)).toLowerCase();
