@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Typography, Card, Row, Col, Button, Avatar, message } from 'antd';
-import { LogoutOutlined, EditOutlined, FilePdfOutlined, ToolOutlined, PlusOutlined, FileTextOutlined } from '@ant-design/icons';
+import { LogoutOutlined, EditOutlined, FilePdfOutlined, ToolOutlined, PlusOutlined, FileTextOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,6 +33,14 @@ const Dashboard: React.FC = () => {
       path: '/tools/contract',
       status: 'active',
       bg: 'bg-purple-50',
+    },
+    {
+      title: '合规性材料',
+      description: '收集和管理房源、客户及合同的合规文件',
+      icon: <SafetyCertificateOutlined style={{ fontSize: '32px', color: '#059669' }} />,
+      path: '/tools/inbox',
+      status: 'active',
+      bg: 'bg-emerald-50',
     },
     {
       title: 'PDF 工具箱 (Coming Soon)',

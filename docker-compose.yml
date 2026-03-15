@@ -9,6 +9,9 @@ services:
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY:-}
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs
     depends_on:
       - backend
     restart: always

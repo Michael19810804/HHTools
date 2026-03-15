@@ -8,6 +8,7 @@ import ContractTool from './pages/ContractTool';
 import DebugLogin from './pages/DebugLogin';
 import UploadPage from './pages/Upload';
 import Sign from './pages/Sign';
+import SimpleInbox from './pages/SimpleInbox';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -62,6 +63,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <UploadPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/tools/inbox" 
+            element={
+              <ProtectedRoute>
+                <SimpleInbox />
               </ProtectedRoute>
             } 
           />
