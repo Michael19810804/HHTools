@@ -23,8 +23,10 @@ ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 # Copy PDF.js worker and cMaps to public directory for local serving
 RUN mkdir -p public/cmaps && \
+    mkdir -p public/standard_fonts && \
     cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.mjs && \
-    cp -r node_modules/pdfjs-dist/cmaps/* public/cmaps/
+    cp -r node_modules/pdfjs-dist/cmaps/* public/cmaps/ && \
+    cp -r node_modules/pdfjs-dist/standard_fonts/* public/standard_fonts/
 
 # Build the application
 RUN npm run build

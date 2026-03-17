@@ -84,26 +84,46 @@ const Sign: React.FC = () => {
           throw new Error('无法获取文档链接');
         }
 
-        // Fetch the file content using a simple proxy to bypass CORS if needed
-        // Or just standard fetch if CORS is configured correctly
+        // Fetch the file content with fallback mechanism
         let arrayBuffer;
+        const originalUrl = publicUrlData.publicUrl;
+        
         try {
-          const response = await fetch(publicUrlData.publicUrl);
-          if (!response.ok) throw new Error('Network response was not ok');
-          arrayBuffer = await response.arrayBuffer();
-        } catch (corsError) {
-          console.warn('Direct fetch failed, trying no-cors mode or proxy...', corsError);
-          // Fallback: If direct fetch fails (likely CORS), we can try to use a CORS proxy
-          // For this MVP, we will try to use the 'no-cors' mode which might return an opaque response
-          // that PDF.js CANNOT read. So 'no-cors' is not a solution for reading data.
+          // Attempt 1: Direct Fetch (Fastest)
+          // Set a timeout for direct fetch (e.g., 5 seconds)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
           
-          // REAL SOLUTION: Since we are on our own server now, we can use our backend as a proxy!
-          // We can add a simple proxy endpoint to our Node.js server.
-          
-          // For now, let's try to append a timestamp to avoid cache
-          const response = await fetch(`${publicUrlData.publicUrl}?t=${Date.now()}`);
-          if (!response.ok) throw new Error(`无法下载文档: ${response.statusText}`);
-          arrayBuffer = await response.arrayBuffer();
+          try {
+            console.log('Attempting direct PDF download...');
+            const response = await fetch(`${originalUrl}?t=${Date.now()}`, { 
+              signal: controller.signal 
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error(`Direct fetch failed: ${response.statusText}`);
+            arrayBuffer = await response.arrayBuffer();
+            console.log('Direct PDF download successful');
+          } catch (directError: any) {
+            clearTimeout(timeoutId);
+            console.warn('Direct fetch failed or timed out, trying proxy...', directError);
+            throw directError; // Re-throw to trigger fallback
+          }
+        } catch (error) {
+          // Attempt 2: Proxy Fetch (Reliable fallback for China/Network issues)
+          try {
+            console.log('Attempting proxy PDF download...');
+            // Construct proxy URL: /api/proxy-pdf?url=ENCODED_URL
+            const proxyUrl = `/api/proxy-pdf?url=${encodeURIComponent(originalUrl)}`;
+            
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`Proxy fetch failed: ${response.statusText}`);
+            arrayBuffer = await response.arrayBuffer();
+            console.log('Proxy PDF download successful');
+          } catch (proxyError: any) {
+            console.error('All download attempts failed', proxyError);
+            throw new Error('文档加载失败，请检查网络或联系管理员');
+          }
         }
 
         // 5. Load PDF

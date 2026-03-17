@@ -8,6 +8,10 @@ GlobalWorkerOptions.workerSrc = `/pdf.worker.mjs`;
 const CMAP_URL = `/cmaps/`;
 const CMAP_PACKED = true;
 
+// Use local Standard Fonts (copied to public/standard_fonts/)
+// This prevents PDF.js from trying to download fonts from unpkg/jsdelivr which are blocked in China
+const STANDARD_FONT_DATA_URL = `/standard_fonts/`;
+
 /**
  * Wrapper around pdfjsLib.getDocument to ensure consistent configuration (cMapUrl, etc.)
  */
@@ -37,6 +41,11 @@ export const getDocument = (src: any) => {
   }
   if (params.cMapPacked === undefined) {
     params.cMapPacked = CMAP_PACKED;
+  }
+  
+  // Inject standard font data url
+  if (!params.standardFontDataUrl) {
+    params.standardFontDataUrl = STANDARD_FONT_DATA_URL;
   }
 
   return pdfjsGetDocument(params);
