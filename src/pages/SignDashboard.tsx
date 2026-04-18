@@ -28,7 +28,8 @@ import {
   LinkOutlined,
   DeleteOutlined,
   DownloadOutlined,
-  SearchOutlined
+  SearchOutlined,
+  UserAddOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -232,8 +233,7 @@ const SignDashboard: React.FC = () => {
             type="link" 
             icon={<DownloadOutlined />} 
             onClick={() => handleDownload(record)}
-            disabled={record.status !== 'completed'}
-            title={record.status !== 'completed' ? '所有签字完成后才可下载' : '下载已签字文档'}
+            title="下载最新文档"
           >
             下载PDF
           </Button>
@@ -246,6 +246,13 @@ const SignDashboard: React.FC = () => {
             }}
           >
             详情/链接
+          </Button>
+          <Button 
+            type="link" 
+            icon={<UserAddOutlined />} 
+            onClick={() => navigate(`/tools/sign/append/${record.id}`)}
+          >
+            加签字人
           </Button>
           <Button 
             type="text" 

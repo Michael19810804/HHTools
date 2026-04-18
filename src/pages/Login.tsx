@@ -16,10 +16,18 @@ const Login: React.FC = () => {
 
     try {
       // Internal Hardcoded Logic mapping (Simplified for internal use)
-      if (username === 'rocket' && password === '9898') {
-        const email = 'rocket@hhtools.com';
-        const realPassword = 'rocket9898';
+      let email = '';
+      let realPassword = '';
 
+      if (username === 'rocket' && password === '9898') {
+        email = 'rocket@hhtools.com';
+        realPassword = 'rocket9898';
+      } else if (username === 'nutt' && password === '9797') {
+        email = 'nutt@hhtools.com';
+        realPassword = 'nutt9797';
+      }
+
+      if (email && realPassword) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password: realPassword,

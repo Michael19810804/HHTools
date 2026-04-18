@@ -7,6 +7,7 @@ import SignDashboard from './pages/SignDashboard';
 import ContractTool from './pages/ContractTool';
 import DebugLogin from './pages/DebugLogin';
 import UploadPage from './pages/Upload';
+import AppendSigner from './pages/AppendSigner';
 import Sign from './pages/Sign';
 import SimpleInbox from './pages/SimpleInbox';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -63,6 +64,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <UploadPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/tools/sign/append/:id" 
+            element={
+              <ProtectedRoute>
+                <AppendSigner />
               </ProtectedRoute>
             } 
           />
