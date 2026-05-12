@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -58,65 +57,6 @@ app.post('/api/send_email', async (req, res) => {
   } catch (error) {
     console.error('Handler Error:', error);
     return res.status(500).json({ error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
-  }
-});
-
-// SSO Token Verification Endpoint
-app.post('/api/sso/verify', (req, res) => {
-  try {
-    // 1. Get token from request body (or query, but POST body is safer)
-    // We also support GET /api/sso/verify?token=... for URL params
-    const token = req.body.token || req.query.token;
-
-    if (!token) {
-      return res.status(400).json({ error: 'Missing token' });
-    }
-
-    const ssoSecret = process.env.SSO_SECRET;
-    if (!ssoSecret) {
-      console.error('Missing SSO_SECRET in environment variables');
-      return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    // 2. Verify the token using jsonwebtoken
-    const decoded = jwt.verify(token, ssoSecret, { algorithms: ['HS256'] });
-
-    // 3. Token is valid. Return the decoded payload (e.g., user info)
-    return res.status(200).json({ 
-      message: 'Token verified successfully', 
-      user: decoded 
-    });
-  } catch (error) {
-    console.error('SSO Verification Error:', error.message);
-    // Return 401 Unauthorized for invalid/expired tokens
-    return res.status(401).json({ error: 'Invalid or expired token', details: error.message });
-  }
-});
-
-app.get('/api/sso/verify', (req, res) => {
-  // Support GET request for URL parameter token verification
-  try {
-    const token = req.query.token;
-
-    if (!token) {
-      return res.status(400).json({ error: 'Missing token in URL parameters' });
-    }
-
-    const ssoSecret = process.env.SSO_SECRET;
-    if (!ssoSecret) {
-      console.error('Missing SSO_SECRET in environment variables');
-      return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    const decoded = jwt.verify(token, ssoSecret, { algorithms: ['HS256'] });
-
-    return res.status(200).json({ 
-      message: 'Token verified successfully', 
-      user: decoded 
-    });
-  } catch (error) {
-    console.error('SSO Verification Error:', error.message);
-    return res.status(401).json({ error: 'Invalid or expired token', details: error.message });
   }
 });
 
