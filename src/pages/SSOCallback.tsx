@@ -19,8 +19,9 @@ const SSOCallback: React.FC = () => {
       }
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await fetch(`${apiUrl}/api/sso/verify?token=${token}`);
+        // Use relative path for production (Nginx proxy) or VITE_API_BASE_URL if set
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+        const response = await fetch(`${apiBaseUrl}/sso/verify?token=${token}`);
         
         if (!response.ok) {
           const data = await response.json();

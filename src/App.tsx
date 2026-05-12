@@ -89,7 +89,8 @@ const App: React.FC = () => {
           <Route path="/upload" element={<Navigate to="/tools/sign/upload" replace />} />
 
           {/* Public/Debug Routes */}
-          <Route path="/sso" element={<SSOCallback />} />
+          <Route path="/sso-login" element={<SSOCallback />} />
+          <Route path="/sso" element={<Navigate to="/sso-login" replace />} />
           <Route path="/login/debug" element={<Navigate to="/debug" replace />} />
           <Route path="/debug" element={<DebugLogin />} />
           <Route path="/sign/:token" element={<Sign />} />
